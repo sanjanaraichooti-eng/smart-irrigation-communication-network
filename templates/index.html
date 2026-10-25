@@ -1,1 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Irrigation Network</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f3f7f4;color:#173b2d}
+    header{background:#104b35;color:white;padding:24px 5%}
+    header h1{margin:0 0 8px;font-size:27px}
+    main{max-width:1200px;margin:24px auto;padding:0 18px}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
+    .card,.panel{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 9px #163a2a12}
+    .label{color:#64756b;font-size:13px}.value{font-size:25px;font-weight:bold;margin-top:8px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:16px}
+    h2{font-size:18px;margin-top:0}canvas{width:100%;max-height:300px}
+    .status{padding:12px;border-radius:8px;background:#e8f3ea;margin-bottom:16px}
+    table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e6ece8}
+    .tablewrap{overflow:auto;max-height:340px}
+    button{background:#176443;color:white;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}
+    footer{color:#69766e;font-size:12px;padding:24px 0}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Smart Irrigation Communication Network</h1>
+  <div>Sensor monitoring · MQTT gateway · Irrigation controller evaluation</div>
+</header>
+<main>
+  <div class="status" id="status">Loading experiment results…</div>
+  <div class="cards">
+    <div class="card"><div class="label">Packet delivery ratio</div><div class="value" id="pdr">—</div></div>
+    <div class="card"><div class="label">Average MQTT latency</div><div class="value" id="latency">—</div></div>
+    <div class="card"><div class="label">Throughput</div><div class="value" id="throughput">—</div></div>
+    <div class="card"><div class="label">Estimated water saved</div><div class="value" id="saved">—</div></div>
+    <div class="card"><div class="label">Messages received</div><div class="value" id="messages">—</div></div>
+  </div>
+  <div class="grid">
+    <div class="panel"><h2>Water use by controller</h2><canvas id="waterChart"></canvas></div>
+    <div class="panel"><h2>Average soil moisture</h2><canvas id="moistureChart"></canvas></div>
+    <div class="panel"><h2>Network performance</h2><canvas id="networkChart"></canvas></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h2>Latest sensor readings</h2>
+    <div class="tablewrap"><table><thead><tr><th>Cycle</th><th>Node</th><th>Moisture</th><th>Latency</th></tr></thead><tbody id="readingRows"></tbody></table></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <h2>Controller comparison</h2>
+    <div class="tablewrap"><table><thead><tr><th>Cycle</th><th>Node</th><th>Moisture</th><th>Fixed pump</th><th>Threshold pump</th></tr></thead><tbody id="controllerRows"></tbody></table></div>
+  </div>
+  <footer>Research prototype. Sensor values and water units are simulated. Network metrics describe this local test run.</footer>
+</main>
+<script>
+let charts = {};
+function drawChart(id, type, data, options={}) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {type, data, options:{responsive:true, ...options}});
+}
+async function loadData(){
+  const response = await fetch('/api/data');
+  const data = await response.json();
+  const s = data.summary;
+  if(!s){
+    document.getElementById('status').textContent =
+      'No results yet. Run "python run_simulation.py", then refresh this page.';
+    return;
+  }
+  document.getElementById('status').textContent =
+    `Latest run: ${s.run_id} · ${s.nodes} nodes · ${s.cycles} cycles · ${s.notes}`;
+  document.getElementById('pdr').textContent = Number(s.packet_delivery_ratio).toFixed(2)+'%';
+  document.getElementById('latency').textContent = Number(s.average_latency_ms).toFixed(3)+' ms';
+  document.getElementById('throughput').textContent = Number(s.throughput_msg_sec).toFixed(2)+' msg/s';
+  document.getElementById('saved').textContent = Number(s.water_saved_percent).toFixed(2)+'%';
+  document.getElementById('messages').textContent = `${s.messages_received} / ${s.messages_sent}`;
+
+  drawChart('waterChart','bar',{
+    labels:['Fixed schedule','Threshold-based'],
+    datasets:[{label:'Simulated water units',data:[s.fixed_water,s.threshold_water]}]
+  },{plugins:{legend:{display:false}}});
+
+  const byCycle = {};
+  data.controllers.forEach(r=>{
+    if(!byCycle[r.cycle]) byCycle[r.cycle]=[];
+    byCycle[r.cycle].push(r.moisture);
+  });
+  const cycles = Object.keys(byCycle).map(Number).sort((a,b)=>a-b);
+  const averages = cycles.map(c=>byCycle[c].reduce((a,b)=>a+b,0)/byCycle[c].length);
+  drawChart('moistureChart','line',{
+    labels:cycles,
+    datasets:[
+      {label:'Average moisture (%)',data:averages,tension:0.2},
+      {label:'Threshold (%)',data:cycles.map(()=>30),borderDash:[5,5],pointRadius:0}
+    ]
+  });
+
+  drawChart('networkChart','bar',{
+    labels:['Delivery ratio (%)','Latency (ms)','Throughput (msg/s)'],
+    datasets:[{label:'Latest run (units differ)',data:[
+      s.packet_delivery_ratio,s.average_latency_ms,s.throughput_msg_sec
+    ]}]
+  },{plugins:{legend:{display:false}}});
+
+  document.getElementById('readingRows').innerHTML = data.readings.slice(-30).reverse().map(r=>
+    `<tr><td>${r.cycle}</td><td>${r.node_id}</td><td>${Number(r.moisture).toFixed(1)}%</td><td>${Number(r.latency_ms).toFixed(3)} ms</td></tr>`
+  ).join('');
+  document.getElementById('controllerRows').innerHTML = data.controllers.slice(-30).reverse().map(r=>
+    `<tr><td>${r.cycle}</td><td>${r.node_id}</td><td>${Number(r.moisture).toFixed(1)}%</td><td>${r.fixed_pump}</td><td>${r.threshold_pump}</td></tr>`
+  ).join('');
+}
+loadData();
+setInterval(loadData, 5000);
+</script>
+</body>
+</html>
 
