@@ -1,0 +1,9 @@
+BROKER_HOST = "127.0.0.1"
+BROKER_PORT = 1883
+MQTT_TOPIC = "smartirrigation/sensors"
+NUM_NODES = 3
+NUM_CYCLES = 30
+MOISTURE_THRESHOLD = 30.0
+FIXED_SCHEDULE_EVERY = 5
+WATER_PER_EVENT = 10.0  # simulated water units per irrigation event
+SIMULATED_PACKET_LOSS = 0.05  # 5% of generated readings are intentionally not published
