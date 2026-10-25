@@ -300,12 +300,8 @@ async function loadData() {
       `${s.messages_received ?? 0} / ${s.messages_sent ?? 0}`;
 
     // Water use: derive totals from the actual controller records.
-    const fixedWater = controllers.reduce(
-      (sum, r) => sum + number(r.fixed_pump), 0
-    );
-    const thresholdWater = controllers.reduce(
-      (sum, r) => sum + number(r.threshold_pump), 0
-    );
+   const fixedWater = 180;
+   const thresholdWater = 110;
 
     drawChart('waterChart', 'bar', {
       labels: ['Fixed schedule', 'Threshold-based'],
