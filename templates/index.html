@@ -1,32 +1,127 @@
+
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Smart Irrigation Network</title>
+  <title>Smart Irrigation Communication Network</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body{font-family:Arial,sans-serif;margin:0;background:#f3f7f4;color:#173b2d}
-    header{background:#104b35;color:white;padding:24px 5%}
-    header h1{margin:0 0 8px;font-size:27px}
-    main{max-width:1200px;margin:24px auto;padding:0 18px}
-    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
-    .card,.panel{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 9px #163a2a12}
-    .label{color:#64756b;font-size:13px}.value{font-size:25px;font-weight:bold;margin-top:8px}
-    .grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
-    gap:16px;
-    margin-top:16px
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f3f7f4;
+      color: #173b2d;
     }
-.panel canvas{width:100%;height:260px!important}
-.panel canvas{width:100%;height:260px!important}
-    h2{font-size:18px;margin-top:0}canvas{width:100%;max-height:300px}
-    .status{padding:12px;border-radius:8px;background:#e8f3ea;margin-bottom:16px}
-    table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e6ece8}
-    .tablewrap{overflow:auto;max-height:340px}
-    button{background:#176443;color:white;border:0;border-radius:7px;padding:10px 14px;cursor:pointer}
-    footer{color:#69766e;font-size:12px;padding:24px 0}
+
+    header {
+      background: #104b35;
+      color: white;
+      padding: 24px 5%;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 27px;
+    }
+
+    main {
+      max-width: 1450px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .card, .panel {
+      min-width: 0;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 9px #163a2a12;
+    }
+
+    .label {
+      color: #64756b;
+      font-size: 14px;
+    }
+
+    .value {
+      font-size: 26px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    h2 {
+      font-size: 19px;
+      margin: 0 0 18px;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 290px;
+    }
+
+    .status {
+      padding: 13px;
+      border-radius: 8px;
+      background: #e8f3ea;
+      margin-bottom: 16px;
+      overflow-wrap: anywhere;
+    }
+
+    .error {
+      background: #fff0ed;
+      color: #922b21;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px;
+      border-bottom: 1px solid #e6ece8;
+      white-space: nowrap;
+    }
+
+    th { background: #f5f8f5; }
+
+    .tablewrap {
+      overflow: auto;
+      max-height: 340px;
+    }
+
+    footer {
+      color: #69766e;
+      font-size: 12px;
+      padding: 24px 0;
+    }
+
+    @media (max-width: 700px) {
+      main { padding: 0 12px; }
+      header h1 { font-size: 23px; }
+      .grid { grid-template-columns: minmax(0, 1fr); }
+      .chart-container { height: 260px; }
+      .value { font-size: 23px; }
+    }
   </style>
 </head>
 <body>
@@ -34,130 +129,328 @@
   <h1>Smart Irrigation Communication Network</h1>
   <div>Sensor monitoring · MQTT gateway · Irrigation controller evaluation</div>
 </header>
+
 <main>
   <div class="status" id="status">Loading experiment results…</div>
+
   <div class="cards">
-    <div class="card"><div class="label">Packet delivery ratio</div><div class="value" id="pdr">—</div></div>
-    <div class="card"><div class="label">Average MQTT latency</div><div class="value" id="latency">—</div></div>
-    <div class="card"><div class="label">Throughput</div><div class="value" id="throughput">—</div></div>
-    <div class="card"><div class="label">Estimated water saved</div><div class="value" id="saved">—</div></div>
-    <div class="card"><div class="label">Messages received</div><div class="value" id="messages">—</div></div>
+    <div class="card">
+      <div class="label">Packet delivery ratio</div>
+      <div class="value" id="pdr">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Average MQTT latency</div>
+      <div class="value" id="latency">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Throughput</div>
+      <div class="value" id="throughput">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Estimated water saved</div>
+      <div class="value" id="saved">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Messages received</div>
+      <div class="value" id="messages">—</div>
+    </div>
   </div>
+
   <div class="grid">
-    <div class="panel"><h2>Water use by controller</h2><canvas id="waterChart"></canvas></div>
-    <div class="panel"><h2>Average soil moisture</h2><canvas id="moistureChart"></canvas></div>
-  <div class="panel">
-    <h2>Packet Delivery Ratio</h2>
-    <canvas id="pdrChart"></canvas>
+    <section class="panel">
+      <h2>Water Use by Controller</h2>
+      <div class="chart-container">
+        <canvas id="waterChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Average Soil Moisture</h2>
+      <div class="chart-container">
+        <canvas id="moistureChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Packet Delivery Ratio</h2>
+      <div class="chart-container">
+        <canvas id="pdrChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Average MQTT Latency</h2>
+      <div class="chart-container">
+        <canvas id="latencyChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Network Throughput</h2>
+      <div class="chart-container">
+        <canvas id="throughputChart"></canvas>
+      </div>
+    </section>
   </div>
-  
-  <div class="panel">
-    <h2>Average MQTT Latency</h2>
-    <canvas id="latencyChart"></canvas>
-  </div>
-  
-  <div class="panel">
-    <h2>Network Throughput</h2>
-    <canvas id="throughputChart"></canvas>
-  </div>  </div>
-  <div class="panel" style="margin-top:16px">
-    <h2>Latest sensor readings</h2>
-    <div class="tablewrap"><table><thead><tr><th>Cycle</th><th>Node</th><th>Moisture</th><th>Latency</th></tr></thead><tbody id="readingRows"></tbody></table></div>
-  </div>
-  <div class="panel" style="margin-top:16px">
-    <h2>Controller comparison</h2>
-    <div class="tablewrap"><table><thead><tr><th>Cycle</th><th>Node</th><th>Moisture</th><th>Fixed pump</th><th>Threshold pump</th></tr></thead><tbody id="controllerRows"></tbody></table></div>
-  </div>
-  <footer>Research prototype. Sensor values and water units are simulated. Network metrics describe this local test run.</footer>
+
+  <section class="panel" style="margin-top:18px">
+    <h2>Latest Sensor Readings</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cycle</th><th>Node</th><th>Moisture</th><th>Latency</th>
+          </tr>
+        </thead>
+        <tbody id="readingRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:18px">
+    <h2>Controller Comparison</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Cycle</th><th>Node</th><th>Moisture</th>
+            <th>Fixed Pump</th><th>Threshold Pump</th>
+          </tr>
+        </thead>
+        <tbody id="controllerRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Research prototype. Sensor values and water units are simulated.
+    Network metrics describe the recorded local test run.
+  </footer>
 </main>
+
 <script>
 let charts = {};
-function drawChart(id, type, data, options={}) {
+
+function drawChart(id, type, data, options = {}) {
   if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), {type, data, options:{responsive:true, ...options}});
+
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+
+  charts[id] = new Chart(canvas, {
+    type,
+    data,
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      ...options
+    }
+  });
 }
-async function loadData(){
-  const response = await fetch('/api/data');
-  const data = await response.json();
-  const s = data.summary;
-  if(!s){
-    document.getElementById('status').textContent =
-      'No results yet. Run "python run_simulation.py", then refresh this page.';
-    return;
+
+function number(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function showError(message) {
+  const status = document.getElementById('status');
+  status.textContent = message;
+  status.classList.add('error');
+}
+
+async function loadData() {
+  try {
+    const response = await fetch('/api/data', { cache: 'no-store' });
+
+    if (!response.ok) {
+      throw new Error('API returned HTTP ' + response.status);
+    }
+
+    const data = await response.json();
+    const s = data.summary;
+
+    if (!s) {
+      showError('No experiment summary was returned by the API.');
+      return;
+    }
+
+    const readings = Array.isArray(data.readings) ? data.readings : [];
+    const controllers = Array.isArray(data.controllers) ? data.controllers : [];
+
+    const status = document.getElementById('status');
+    status.classList.remove('error');
+    status.textContent =
+      `Latest run: ${s.run_id} · ${s.nodes} nodes · ${s.cycles} cycles · ${s.notes || ''}`;
+
+    document.getElementById('pdr').textContent =
+      number(s.packet_delivery_ratio).toFixed(2) + '%';
+
+    document.getElementById('latency').textContent =
+      number(s.average_latency_ms).toFixed(3) + ' ms';
+
+    document.getElementById('throughput').textContent =
+      number(s.throughput_msg_sec).toFixed(2) + ' msg/s';
+
+    document.getElementById('saved').textContent =
+      number(s.water_saved_percent).toFixed(2) + '%';
+
+    document.getElementById('messages').textContent =
+      `${s.messages_received ?? 0} / ${s.messages_sent ?? 0}`;
+
+    // Water use: derive totals from the actual controller records.
+    const fixedWater = controllers.reduce(
+      (sum, r) => sum + number(r.fixed_pump), 0
+    );
+    const thresholdWater = controllers.reduce(
+      (sum, r) => sum + number(r.threshold_pump), 0
+    );
+
+    drawChart('waterChart', 'bar', {
+      labels: ['Fixed schedule', 'Threshold-based'],
+      datasets: [{
+        label: 'Water used (simulated units)',
+        data: [fixedWater, thresholdWater],
+        backgroundColor: ['#91c9f0', '#65b99a']
+      }]
+    }, {
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: true }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Simulated water units' }
+        }
+      }
+    });
+
+    // Average soil moisture grouped by cycle.
+    const byCycle = {};
+
+    readings.forEach(r => {
+      const cycle = number(r.cycle);
+      if (!byCycle[cycle]) byCycle[cycle] = [];
+      byCycle[cycle].push(number(r.moisture));
+    });
+
+    const cycles = Object.keys(byCycle).map(Number).sort((a, b) => a - b);
+    const averages = cycles.map(cycle => {
+      const values = byCycle[cycle];
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    });
+
+    drawChart('moistureChart', 'line', {
+      labels: cycles,
+      datasets: [
+        {
+          label: 'Average moisture (%)',
+          data: averages,
+          borderColor: '#3498db',
+          backgroundColor: '#91c9f0',
+          tension: 0.2
+        },
+        {
+          label: 'Threshold (%)',
+          data: cycles.map(() => 30),
+          borderColor: '#ff6384',
+          backgroundColor: '#ff6384',
+          borderDash: [6, 5],
+          pointRadius: 0
+        }
+      ]
+    }, {
+      scales: {
+        y: {
+          beginAtZero: false,
+          title: { display: true, text: 'Soil moisture (%)' }
+        }
+      }
+    });
+
+    // Each network metric has its own chart and scale.
+    drawChart('pdrChart', 'bar', {
+      labels: ['Packet delivery'],
+      datasets: [{
+        label: 'Delivery ratio (%)',
+        data: [number(s.packet_delivery_ratio)],
+        backgroundColor: '#91c9f0'
+      }]
+    }, {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          title: { display: true, text: 'Percentage (%)' }
+        }
+      }
+    });
+
+    drawChart('latencyChart', 'bar', {
+      labels: ['Average latency'],
+      datasets: [{
+        label: 'Latency (ms)',
+        data: [number(s.average_latency_ms)],
+        backgroundColor: '#91c9f0'
+      }]
+    }, {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Latency (ms)' }
+        }
+      }
+    });
+
+    drawChart('throughputChart', 'bar', {
+      labels: ['Message throughput'],
+      datasets: [{
+        label: 'Throughput (messages/sec)',
+        data: [number(s.throughput_msg_sec)],
+        backgroundColor: '#91c9f0'
+      }]
+    }, {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Messages per second' }
+        }
+      }
+    });
+
+    document.getElementById('readingRows').innerHTML =
+      readings.slice(-30).reverse().map(r =>
+        `<tr>
+          <td>${r.cycle ?? ''}</td>
+          <td>${r.node_id ?? ''}</td>
+          <td>${number(r.moisture).toFixed(1)}%</td>
+          <td>${number(r.latency_ms).toFixed(3)} ms</td>
+        </tr>`
+      ).join('');
+
+    document.getElementById('controllerRows').innerHTML =
+      controllers.slice(-30).reverse().map(r =>
+        `<tr>
+          <td>${r.cycle ?? ''}</td>
+          <td>${r.node_id ?? ''}</td>
+          <td>${number(r.moisture).toFixed(1)}%</td>
+          <td>${r.fixed_pump ?? ''}</td>
+          <td>${r.threshold_pump ?? ''}</td>
+        </tr>`
+      ).join('');
+
+  } catch (error) {
+    console.error('Dashboard loading error:', error);
+    showError('Could not load dashboard data. Check the /api/data endpoint and Render logs.');
   }
-  document.getElementById('status').textContent =
-    `Latest run: ${s.run_id} · ${s.nodes} nodes · ${s.cycles} cycles · ${s.notes}`;
-  document.getElementById('pdr').textContent = Number(s.packet_delivery_ratio).toFixed(2)+'%';
-  document.getElementById('latency').textContent = Number(s.average_latency_ms).toFixed(3)+' ms';
-  document.getElementById('throughput').textContent = Number(s.throughput_msg_sec).toFixed(2)+' msg/s';
-  document.getElementById('saved').textContent = Number(s.water_saved_percent).toFixed(2)+'%';
-  document.getElementById('messages').textContent = `${s.messages_received} / ${s.messages_sent}`;
-
-  
-  drawChart('pdrChart', 'bar', {
-    labels: ['Packet Delivery Ratio'],
-    datasets: [{
-      label: 'Delivery Ratio (%)',
-      data: [s.packet_delivery_ratio]
-    }]
-  }, {
-    scales: {
-      y: { beginAtZero: true, max: 100 }
-    },
-    plugins: { legend: { display: false } }
-  });
-
-  drawChart('latencyChart', 'bar', {
-    labels: ['Average Latency'],
-    datasets: [{
-      label: 'Latency (ms)',
-      data: [s.average_latency_ms]
-    }]
-  }, {
-    scales: {
-      y: { beginAtZero: true }
-    },
-    plugins: { legend: { display: false } }
-  });
-
-  drawChart('throughputChart', 'bar', {
-    labels: ['Throughput'],
-    datasets: [{
-      label: 'Messages per second',
-      data: [s.throughput_msg_sec]
-    }]
-  }, {
-    scales: {
-      y: { beginAtZero: true }
-    },
-    plugins: { legend: { display: false } }
-  });
-  const byCycle = {};
-  data.readings.forEach(r => {
-    const c = Number(r.cycle);
-    if (!byCycle[c]) byCycle[c] = [];
-    byCycle[c].push(Number(r.moisture));
-  });
-  const cycles = Object.keys(byCycle).map(Number).sort((a,b)=>a-b);
-  const averages = cycles.map(c=>byCycle[c].reduce((a,b)=>a+b,0)/byCycle[c].length);
-  drawChart('moistureChart','line',{
-    labels:cycles,
-    datasets:[
-      {label:'Average moisture (%)',data:averages,tension:0.2},
-      {label:'Threshold (%)',data:cycles.map(()=>30),borderDash:[5,5],pointRadius:0}
-    ]
-  });
-
-   document.getElementById('readingRows').innerHTML = data.readings.slice(-30).reverse().map(r=>
-    `<tr><td>${r.cycle}</td><td>${r.node_id}</td><td>${Number(r.moisture).toFixed(1)}%</td><td>${Number(r.latency_ms).toFixed(3)} ms</td></tr>`
-  ).join('');
-  document.getElementById('controllerRows').innerHTML = data.controllers.slice(-30).reverse().map(r=>
-    `<tr><td>${r.cycle}</td><td>${r.node_id}</td><td>${Number(r.moisture).toFixed(1)}%</td><td>${r.fixed_pump}</td><td>${r.threshold_pump}</td></tr>`
-  ).join('');
 }
+
 loadData();
-setInterval(loadData, 5000);
 </script>
 </body>
 </html>
-
