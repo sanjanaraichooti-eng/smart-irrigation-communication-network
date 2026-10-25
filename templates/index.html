@@ -13,7 +13,14 @@
     .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}
     .card,.panel{background:white;border-radius:12px;padding:18px;box-shadow:0 2px 9px #163a2a12}
     .label{color:#64756b;font-size:13px}.value{font-size:25px;font-weight:bold;margin-top:8px}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:16px}
+    .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));
+    gap:16px;
+    margin-top:16px
+    }
+.panel canvas{width:100%;height:260px!important}
+.panel canvas{width:100%;height:260px!important}
     h2{font-size:18px;margin-top:0}canvas{width:100%;max-height:300px}
     .status{padding:12px;border-radius:8px;background:#e8f3ea;margin-bottom:16px}
     table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:9px;border-bottom:1px solid #e6ece8}
@@ -39,8 +46,20 @@
   <div class="grid">
     <div class="panel"><h2>Water use by controller</h2><canvas id="waterChart"></canvas></div>
     <div class="panel"><h2>Average soil moisture</h2><canvas id="moistureChart"></canvas></div>
-    <div class="panel"><h2>Network performance</h2><canvas id="networkChart"></canvas></div>
+  <div class="panel">
+    <h2>Packet Delivery Ratio</h2>
+    <canvas id="pdrChart"></canvas>
   </div>
+  
+  <div class="panel">
+    <h2>Average MQTT Latency</h2>
+    <canvas id="latencyChart"></canvas>
+  </div>
+  
+  <div class="panel">
+    <h2>Network Throughput</h2>
+    <canvas id="throughputChart"></canvas>
+  </div>  </div>
   <div class="panel" style="margin-top:16px">
     <h2>Latest sensor readings</h2>
     <div class="tablewrap"><table><thead><tr><th>Cycle</th><th>Node</th><th>Moisture</th><th>Latency</th></tr></thead><tbody id="readingRows"></tbody></table></div>
@@ -74,15 +93,50 @@ async function loadData(){
   document.getElementById('saved').textContent = Number(s.water_saved_percent).toFixed(2)+'%';
   document.getElementById('messages').textContent = `${s.messages_received} / ${s.messages_sent}`;
 
-  drawChart('waterChart','bar',{
-    labels:['Fixed schedule','Threshold-based'],
-    datasets:[{label:'Simulated water units',data:[s.fixed_water,s.threshold_water]}]
-  },{plugins:{legend:{display:false}}});
+  
+  drawChart('pdrChart', 'bar', {
+    labels: ['Packet Delivery Ratio'],
+    datasets: [{
+      label: 'Delivery Ratio (%)',
+      data: [s.packet_delivery_ratio]
+    }]
+  }, {
+    scales: {
+      y: { beginAtZero: true, max: 100 }
+    },
+    plugins: { legend: { display: false } }
+  });
 
+  drawChart('latencyChart', 'bar', {
+    labels: ['Average Latency'],
+    datasets: [{
+      label: 'Latency (ms)',
+      data: [s.average_latency_ms]
+    }]
+  }, {
+    scales: {
+      y: { beginAtZero: true }
+    },
+    plugins: { legend: { display: false } }
+  });
+
+  drawChart('throughputChart', 'bar', {
+    labels: ['Throughput'],
+    datasets: [{
+      label: 'Messages per second',
+      data: [s.throughput_msg_sec]
+    }]
+  }, {
+    scales: {
+      y: { beginAtZero: true }
+    },
+    plugins: { legend: { display: false } }
+  });
   const byCycle = {};
-  data.controllers.forEach(r=>{
-    if(!byCycle[r.cycle]) byCycle[r.cycle]=[];
-    byCycle[r.cycle].push(r.moisture);
+  data.readings.forEach(r => {
+    const c = Number(r.cycle);
+    if (!byCycle[c]) byCycle[c] = [];
+    byCycle[c].push(Number(r.moisture));
   });
   const cycles = Object.keys(byCycle).map(Number).sort((a,b)=>a-b);
   const averages = cycles.map(c=>byCycle[c].reduce((a,b)=>a+b,0)/byCycle[c].length);
@@ -94,14 +148,7 @@ async function loadData(){
     ]
   });
 
-  drawChart('networkChart','bar',{
-    labels:['Delivery ratio (%)','Latency (ms)','Throughput (msg/s)'],
-    datasets:[{label:'Latest run (units differ)',data:[
-      s.packet_delivery_ratio,s.average_latency_ms,s.throughput_msg_sec
-    ]}]
-  },{plugins:{legend:{display:false}}});
-
-  document.getElementById('readingRows').innerHTML = data.readings.slice(-30).reverse().map(r=>
+   document.getElementById('readingRows').innerHTML = data.readings.slice(-30).reverse().map(r=>
     `<tr><td>${r.cycle}</td><td>${r.node_id}</td><td>${Number(r.moisture).toFixed(1)}%</td><td>${Number(r.latency_ms).toFixed(3)} ms</td></tr>`
   ).join('');
   document.getElementById('controllerRows').innerHTML = data.controllers.slice(-30).reverse().map(r=>
