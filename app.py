@@ -82,8 +82,8 @@ def get_dashboard_data():
 
     # ADDED: Load experiment results from CSV if the database has none.
     if not experiments:
-        csv_path = Path(__file__).parent / "results" / "network_experiments.csv"
-
+        csv_path = Path(__file__).parent / "network_experiments.csv"
+        
         if csv_path.exists():
             with csv_path.open("r", newline="", encoding="utf-8") as file:
                 rows = list(csv.DictReader(file))
