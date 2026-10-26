@@ -49,7 +49,6 @@ def get_dashboard_data():
                 (run_id,),
             ).fetchall()
         ]
-
         controllers = [
             dict(row)
             for row in conn.execute(
