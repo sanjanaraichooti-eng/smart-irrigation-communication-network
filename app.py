@@ -47,21 +47,21 @@ def get_dashboard_data():
                 (run_id,),
             ).fetchall()
         ]
-
+        
         controllers = [
             dict(row)
             for row in conn.execute(
                 """
-                SELECT cycle, node_id, zone_id, moisture, fixed_pump,
-                       threshold_pump, fixed_water, threshold_water,
-                       crop_stress
+                SELECT cycle, node_id, moisture, fixed_pump,
+                       threshold_pump, fixed_water, threshold_water
                 FROM controller_results
                 WHERE run_id=?
-                ORDER BY cycle, zone_id, node_id
+                ORDER BY cycle, node_id
                 """,
                 (run_id,),
             ).fetchall()
         ]
+
 
         experiments = [
             dict(row)
