@@ -1,4 +1,6 @@
 
+import csv
+from pathlib import Path
 import sqlite3
 from flask import Flask, render_template, jsonify
 from database import DB_PATH, init_db
@@ -47,7 +49,7 @@ def get_dashboard_data():
                 (run_id,),
             ).fetchall()
         ]
-        
+
         controllers = [
             dict(row)
             for row in conn.execute(
@@ -61,7 +63,6 @@ def get_dashboard_data():
                 (run_id,),
             ).fetchall()
         ]
-
 
         experiments = [
             dict(row)
@@ -79,6 +80,30 @@ def get_dashboard_data():
             ).fetchall()
         ]
 
+    # ADDED: Load experiment results from CSV if the database has none.
+    if not experiments:
+        csv_path = Path(__file__).parent / "results" / "network_experiments.csv"
+
+        if csv_path.exists():
+            with csv_path.open("r", newline="", encoding="utf-8") as file:
+                rows = list(csv.DictReader(file))
+
+            if rows:
+                latest_run_id = rows[-1]["run_id"]
+                experiments = [
+                    {
+                        "experiment_type": row["experiment_type"],
+                        "parameter_value": float(row["parameter_value"]),
+                        "packet_delivery_ratio": float(row["packet_delivery_ratio"]),
+                        "average_latency_ms": float(row["average_latency_ms"]),
+                        "throughput_msg_sec": float(row["throughput_msg_sec"]),
+                        "transmissions_per_packet": float(row["transmissions_per_packet"]),
+                        "crop_stress_percent": float(row["crop_stress_percent"]),
+                    }
+                    for row in rows
+                    if row["run_id"] == latest_run_id
+                ]
+
     return {
         "summary": summary,
         "readings": readings,
@@ -90,6 +115,7 @@ def get_dashboard_data():
 @app.route("/")
 def index():
     return render_template("index.html")
+
 
 @app.route("/api/data")
 def api_data():
